@@ -12,6 +12,8 @@ import mindustry.gen.*;
 import mindustry.mod.Plugin;
 import mindustry.net.*;
 import mindustry.world.Tile;
+import mindustry.content.*;
+import mindustry.world.blocks.storage.CoreBlock;
 
 import java.io.*;
 import java.util.Objects;
