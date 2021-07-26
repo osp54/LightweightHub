@@ -67,17 +67,7 @@ public class LightweightHub extends Plugin{
     @Override
     public void init(){
 
-        Fi lobby = customMapDirectory.child("lobby.msav");
-        if(!lobby.exists()){
-            try{
-                InputStream stream = LightweightHub.class.getClassLoader().getResourceAsStream(lobby.name());
-                Objects.requireNonNull(stream, "stream");
-                Streams.copy(stream, lobby.write(false));
-            }catch(IOException | NullPointerException e){
-                Log.err("Failed to copy hub map. Skipping.");
-                Log.err(e);
-            }
-        }
+        ((CoreBlock)Blocks.coreNucleus).unitType = UnitTypes.poly;
 
         Fi cfg = dataDirectory.child("config-hub.json");
         if(!cfg.exists()){
