@@ -104,13 +104,6 @@ public class LightweightHub extends Plugin{
             }
         });
 
-        Events.on(PlayerLeave.class, event -> {
-            EffectData effect = config.eventEffects.get("leave");
-            if(effect != null){
-                effect.spawn(event.player.x, event.player.y);
-            }
-        });
-
         Timer.schedule(() -> {
             CompletableFuture<?>[] tasks = config.servers.stream()
                     .map(data -> CompletableFuture.runAsync(() -> {
@@ -138,9 +131,6 @@ public class LightweightHub extends Plugin{
             try{
                 tasks.each(Timer.Task::cancel);
                 config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
-                for(EffectData effect : config.effects){
-                    tasks.add(Timer.schedule(effect::spawn, 0f, effect.periodMillis / 1000f));
-                }
                 Log.info("Reloaded");
             }catch(Throwable t){
                 Log.err("Failed to reload config.json.");
