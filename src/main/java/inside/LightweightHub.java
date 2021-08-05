@@ -98,11 +98,6 @@ public class LightweightHub extends Plugin{
 
         Events.on(PlayerJoin.class, event -> {
             NetConnection con = event.player.con();
-
-            int teamId = Mathf.random(255);
-            Team team = findTeam(teamId);
-            event.player.team(team);
-
             for(HostData data : config.servers){
                 Call.label(con, data.title, 10f, data.titleX, data.titleY);
                 net.pingHost(data.ip, data.port, host -> Call.label(con, formatter.get(host), 10f, data.labelX, data.labelY),
@@ -143,12 +138,5 @@ public class LightweightHub extends Plugin{
                 Log.err(t);
             }
         });
-    }
-
-    public Team findTeam(int number) {
-        for(Team team : Team.all) {
-            if (team.id == number) return team;
-        }
-        return Team.sharded;
     }
 }
