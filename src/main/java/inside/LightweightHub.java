@@ -5,10 +5,12 @@ import arc.files.Fi;
 import arc.func.Func;
 import arc.struct.Seq;
 import arc.util.*;
+import arc.Mathf.*;
 import arc.util.io.Streams;
 import com.google.gson.*;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
+import mindustry.game.*;
 import mindustry.mod.Plugin;
 import mindustry.net.*;
 import mindustry.world.Tile;
@@ -69,7 +71,7 @@ public class LightweightHub extends Plugin{
     @Override
     public void init(){
 
-        ((CoreBlock)Blocks.coreNucleus).unitType = UnitTypes.poly;
+        ((CoreBlock)Blocks.coreNucleus).unitType = UnitTypes.flare;
 
         Fi cfg = dataDirectory.child("config-hub.json");
         if(!cfg.exists()){
@@ -96,6 +98,10 @@ public class LightweightHub extends Plugin{
 
         Events.on(PlayerJoin.class, event -> {
             NetConnection con = event.player.con();
+
+            int teamId = Mathf.random(255);
+            Team team = findTeam(teamId);
+            event.player.team(team);
 
             for(HostData data : config.servers){
                 Call.label(con, data.title, 10f, data.titleX, data.titleY);
@@ -137,5 +143,12 @@ public class LightweightHub extends Plugin{
                 Log.err(t);
             }
         });
+    }
+
+    public Team findTeam(int number) {
+        for(Team team : Team.all) {
+            if (team.id == number) return team;
+        }
+        return Team.sharded;
     }
 }
