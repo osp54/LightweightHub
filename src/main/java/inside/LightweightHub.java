@@ -5,7 +5,7 @@ import arc.files.Fi;
 import arc.func.Func;
 import arc.struct.Seq;
 import arc.util.*;
-import arc.math.Mathf.*;
+import arc.math.Mathf;
 import arc.util.io.Streams;
 import com.google.gson.*;
 import mindustry.game.EventType.*;
