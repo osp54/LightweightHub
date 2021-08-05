@@ -84,10 +84,6 @@ public class LightweightHub extends Plugin{
             }
         }
 
-        for(EffectData effect : config.effects){
-            tasks.add(Timer.schedule(effect::spawn, 0f, effect.periodMillis / 1000f));
-        }
-
         Events.on(ServerLoadEvent.class, event -> netServer.admins.addActionFilter(playerAction -> false));
 
         Events.on(TapEvent.class, event -> teleport(event.player, event.tile));
@@ -98,21 +94,8 @@ public class LightweightHub extends Plugin{
             }
         });
 
-        Events.run(Trigger.update, () -> {
-            Groups.player.each(p -> p.unit().moving(), p -> {
-                EffectData effect = config.eventEffects.get("move");
-                if(effect != null){
-                    effect.spawn(p.x, p.y);
-                }
-            });
-        });
-
         Events.on(PlayerJoin.class, event -> {
             NetConnection con = event.player.con();
-            EffectData effect = config.eventEffects.get("join");
-            if(effect != null){
-                effect.spawn(event.player.x, event.player.y);
-            }
 
             for(HostData data : config.servers){
                 Call.label(con, data.title, 10f, data.titleX, data.titleY);
@@ -151,7 +134,7 @@ public class LightweightHub extends Plugin{
     @Override
     public void registerServerCommands(CommandHandler handler){
 
-        handler.register("reload-cfg", "Reload config.", args -> {
+        handler.register("reload-cfg", "Перезапустить файл с конфигами.", args -> {
             try{
                 tasks.each(Timer.Task::cancel);
                 config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
