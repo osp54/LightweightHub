@@ -103,6 +103,8 @@ public class LightweightHub extends Plugin{
                 net.pingHost(data.ip, data.port, host -> Call.label(con, formatter.get(host), 10f, data.labelX, data.labelY),
                         e -> Call.label(con, config.offlinePattern, 10f, data.labelX, data.labelY));
             }
+            int id = Mathf.random(255);
+            event.player.team(Team.all[id]);
         });
 
         Timer.schedule(() -> {
