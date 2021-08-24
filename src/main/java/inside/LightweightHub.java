@@ -5,7 +5,6 @@ import arc.files.Fi;
 import arc.func.Func;
 import arc.struct.Seq;
 import arc.util.*;
-import arc.math.Mathf;
 import arc.util.io.Streams;
 import com.google.gson.*;
 import mindustry.game.EventType.*;
@@ -76,12 +75,12 @@ public class LightweightHub extends Plugin{
         Fi cfg = dataDirectory.child("config-hub.json");
         if(!cfg.exists()){
             cfg.writeString(gson.toJson(config = new Config()));
-            Log.info("Config created... (@)", cfg.absolutePath());
+            Log.info("Файл конфигурации сгенерирован... (@)", cfg.absolutePath());
         }else{
             try{
                 config = gson.fromJson(cfg.reader(), Config.class);
             }catch(Throwable t){
-                Log.err("Failed to load config file. Check your json format");
+                Log.err("Ошибка загрузки файла конфигурации. Что-то не так с форматом json.");
                 Log.err(t);
             }
         }
@@ -103,14 +102,12 @@ public class LightweightHub extends Plugin{
                 net.pingHost(data.ip, data.port, host -> Call.label(con, formatter.get(host), 10f, data.labelX, data.labelY),
                         e -> Call.label(con, config.offlinePattern, 10f, data.labelX, data.labelY));
             }
-            int id = Mathf.random(255);
-            event.player.team(Team.all[id]);
         });
 
         Timer.schedule(() -> {
             CompletableFuture<?>[] tasks = config.servers.stream()
                     .map(data -> CompletableFuture.runAsync(() -> {
-                        // all tasks executes on ForkJoinPool
+
                         Core.app.post(() -> Call.label(data.title, 5f, data.titleX, data.titleY));
                         net.pingHost(data.ip, data.port, host -> {
                             counter.addAndGet(host.players);
@@ -134,9 +131,9 @@ public class LightweightHub extends Plugin{
             try{
                 tasks.each(Timer.Task::cancel);
                 config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
-                Log.info("Reloaded");
+                Log.info("Успешно перезагружено.");
             }catch(Throwable t){
-                Log.err("Failed to reload config.json.");
+                Log.err("Ошибка загрузки файла config-hub.json.");
                 Log.err(t);
             }
         });
