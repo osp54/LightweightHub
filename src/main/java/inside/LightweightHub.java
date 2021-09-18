@@ -58,9 +58,6 @@ public class LightweightHub extends Plugin{
         for(HostData data : config.servers){
             if(data.inDiapason(tile != null ? tile.x : player.tileX(), tile != null ? tile.y : player.tileY())){
                 net.pingHost(data.ip, data.port, host -> {
-                    if(config.logConnects){
-                        Log.info("[@] @ --> @:@", player.uuid(), player.name, data.ip, data.port);
-                    }
                     Call.connect(player.con, data.ip, data.port);
                 }, e -> {});
             }
@@ -79,13 +76,13 @@ public class LightweightHub extends Plugin{
         }else{
             try{
                 config = gson.fromJson(cfg.reader(), Config.class);
-            }catch(Throwable t){
+            }catch(Exception e){
                 Log.err("Ошибка загрузки файла конфигурации. Что-то не так с форматом json.");
-                Log.err(t);
+                Log.err(e);
             }
         }
 
-        Events.on(ServerLoadEvent.class, event -> netServer.admins.addActionFilter(playerAction -> false));
+        Events.on(ServerLoadEvent.class, event -> netServer.admins.addActionFilter(action -> false));
 
         Events.on(TapEvent.class, event -> teleport(event.player, event.tile));
 
@@ -96,11 +93,10 @@ public class LightweightHub extends Plugin{
         });
 
         Events.on(PlayerJoin.class, event -> {
-            NetConnection con = event.player.con();
             for(HostData data : config.servers){
-                Call.label(con, data.title, 10f, data.titleX, data.titleY);
-                net.pingHost(data.ip, data.port, host -> Call.label(con, formatter.get(host), 10f, data.labelX, data.labelY),
-                        e -> Call.label(con, config.offlinePattern, 10f, data.labelX, data.labelY));
+                Call.label(event.player.con(), data.title, 10f, data.titleX, data.titleY);
+                net.pingHost(data.ip, data.port, host -> Call.label(event.player.con(), formatter.get(host), 10f, data.labelX, data.labelY),
+                        e -> Call.label(event.player.con(), config.offlinePattern, 10f, data.labelX, data.labelY));
             }
         });
 
@@ -127,14 +123,14 @@ public class LightweightHub extends Plugin{
     @Override
     public void registerServerCommands(CommandHandler handler){
 
-        handler.register("reload-cfg", "Перезапустить файл с конфигами.", args -> {
+        handler.register("reload-hub", "Перезапустить файл конфигурации.", args -> {
             try{
                 tasks.each(Timer.Task::cancel);
                 config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
                 Log.info("Успешно перезагружено.");
-            }catch(Throwable t){
+            }catch(Exception e){
                 Log.err("Ошибка загрузки файла config-hub.json.");
-                Log.err(t);
+                Log.err(e);
             }
         });
     }
