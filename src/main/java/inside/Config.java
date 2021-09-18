@@ -18,9 +18,6 @@ public class Config{
      */
     public String onlinePattern = "\uE837 [accent]Online: %players%\n\uE827 Map: %mapname%";
 
-    /** If {@code true}, player connection logging will be enabled. */
-    public boolean logConnects = false;
-
     /** List with {@link HostData}. */
     public List<HostData> servers = Arrays.asList(
             new HostData(1000, 7, 22, 37, 200, 320, 200, 288),
