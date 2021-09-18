@@ -1,22 +1,9 @@
 package inside;
 
-import mindustry.net.Host;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 public class Config{
-
-    /** Offline pattern, used when servers are offline. */
-    public String offlinePattern = "\u26A0 [scarlet]Offline";
-
-    /**
-     * Online count pattern, used in servers status.
-     * This is placeholder based patter, {@link LightweightHub#formatter}.
-     * <p>
-     * Syntax: <b>%fieldName%</b> - where fieldName is one of
-     * a fields is {@link Host} class.
-     */
-    public String onlinePattern = "\uE837 [accent]Online: %players%\n\uE827 Map: %mapname%";
 
     /** List with {@link HostData}. */
     public List<HostData> servers = Arrays.asList(

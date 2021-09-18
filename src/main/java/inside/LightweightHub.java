@@ -1,47 +1,40 @@
 package inside;
 
-import arc.*;
+import arc.Core;
+import arc.Events;
 import arc.files.Fi;
-import arc.func.Func;
 import arc.struct.Seq;
-import arc.util.*;
-import arc.util.io.Streams;
-import com.google.gson.*;
-import mindustry.game.EventType.*;
-import mindustry.gen.*;
-import mindustry.game.*;
+import arc.util.CommandHandler;
+import arc.util.Interval;
+import arc.util.Log;
+import arc.util.Timer;
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import mindustry.content.Blocks;
+import mindustry.content.UnitTypes;
+import mindustry.game.EventType.PlayerJoin;
+import mindustry.game.EventType.ServerLoadEvent;
+import mindustry.game.EventType.TapEvent;
+import mindustry.game.EventType.Trigger;
+import mindustry.gen.Call;
+import mindustry.gen.Groups;
+import mindustry.gen.Player;
 import mindustry.mod.Plugin;
-import mindustry.net.*;
 import mindustry.world.Tile;
-import mindustry.content.*;
 import mindustry.world.blocks.storage.CoreBlock;
 
-import java.io.*;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static mindustry.Vars.*;
 
-public class LightweightHub extends Plugin{
+public class LightweightHub extends Plugin {
     public static Config config;
 
     private final Interval interval = new Interval();
     private final AtomicInteger counter = new AtomicInteger();
     private final Seq<Timer.Task> tasks = new Seq<>();
-    public final Func<Host, String> formatter = host -> config.onlinePattern.replace("%name%", host.name)
-            .replace("%address%", host.address)
-            .replace("%mapname%", host.mapname)
-            .replace("%description%", host.description)
-            .replace("%wave%", Integer.toString(host.wave))
-            .replace("%players%", Integer.toString(host.players))
-            .replace("%playerLimit%", Integer.toString(host.playerLimit))
-            .replace("%version%", Integer.toString(host.version))
-            .replace("%versionType%", host.versionType)
-            .replace("%mode%", host.mode.name()) // NOTE: Gamemode#toString use localized string, but the server has no localization.
-            .replace("%modeName%", host.modeName != null ? host.modeName : host.mode.name())
-            .replace("%ping%", Integer.toString(host.ping))
-            .replace("%port%", Integer.toString(host.port));
 
     public final Gson gson = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES)
@@ -54,53 +47,48 @@ public class LightweightHub extends Plugin{
         teleport(player, null);
     }
 
-    public void teleport(final Player player, Tile tile){
-        for(HostData data : config.servers){
-            if(data.inDiapason(tile != null ? tile.x : player.tileX(), tile != null ? tile.y : player.tileY())){
-                net.pingHost(data.ip, data.port, host -> {
-                    if(config.logConnects){
-                        Log.info("[@] @ --> @:@", player.uuid(), player.name, data.ip, data.port);
-                    }
-                    Call.connect(player.con, data.ip, data.port);
-                }, e -> {});
+    public void teleport(final Player player, Tile tile) {
+        for (HostData data : config.servers) {
+            if (data.inDiapason(tile != null ? tile.x : player.tileX(), tile != null ? tile.y : player.tileY())) {
+                net.pingHost(data.ip, data.port, host -> Call.connect(player.con, data.ip, data.port), e -> {});
             }
         }
     }
 
     @Override
-    public void init(){
+    public void init() {
 
-        ((CoreBlock)Blocks.coreNucleus).unitType = UnitTypes.flare;
+        // Заменяем стандартного юнита на Поли
+        ((CoreBlock)Blocks.coreNucleus).unitType = UnitTypes.poly;
 
         Fi cfg = dataDirectory.child("config-hub.json");
-        if(!cfg.exists()){
+        if (!cfg.exists()) {
             cfg.writeString(gson.toJson(config = new Config()));
             Log.info("Файл конфигурации сгенерирован... (@)", cfg.absolutePath());
-        }else{
-            try{
+        } else {
+            try {
                 config = gson.fromJson(cfg.reader(), Config.class);
-            }catch(Throwable t){
+            } catch(Exception e) {
                 Log.err("Ошибка загрузки файла конфигурации. Что-то не так с форматом json.");
-                Log.err(t);
+                Log.err(e);
             }
         }
 
-        Events.on(ServerLoadEvent.class, event -> netServer.admins.addActionFilter(playerAction -> false));
+        Events.on(ServerLoadEvent.class, event -> netServer.admins.addActionFilter(action -> false));
 
         Events.on(TapEvent.class, event -> teleport(event.player, event.tile));
 
         Events.run(Trigger.update, () -> {
-            if(interval.get(60 * 0.15f)){
+            if (interval.get(60 * 0.15f)) {
                 Groups.player.each(this::teleport);
             }
         });
 
         Events.on(PlayerJoin.class, event -> {
-            NetConnection con = event.player.con();
-            for(HostData data : config.servers){
-                Call.label(con, data.title, 10f, data.titleX, data.titleY);
-                net.pingHost(data.ip, data.port, host -> Call.label(con, formatter.get(host), 10f, data.labelX, data.labelY),
-                        e -> Call.label(con, config.offlinePattern, 10f, data.labelX, data.labelY));
+            for (HostData data : config.servers) {
+                Call.label(event.player.con(), data.title, 10f, data.titleX, data.titleY);
+                net.pingHost(data.ip, data.port, host -> Call.label(event.player.con(), Bundle.format("onlinePattern", Bundle.findLocale(event.player), host.players, host.mapname), 10f, data.labelX, data.labelY),
+                        e -> Call.label(event.player.con(), Bundle.format("offlinePattern", Bundle.findLocale(event.player)), 10f, data.labelX, data.labelY));
             }
         });
 
@@ -111,8 +99,8 @@ public class LightweightHub extends Plugin{
                         Core.app.post(() -> Call.label(data.title, 5f, data.titleX, data.titleY));
                         net.pingHost(data.ip, data.port, host -> {
                             counter.addAndGet(host.players);
-                            Call.label(formatter.get(host), 5f, data.labelX, data.labelY);
-                        }, e -> Call.label(config.offlinePattern, 5f, data.labelX, data.labelY));
+                            Groups.player.each(player -> Call.label(player.con, Bundle.format("onlinePattern", Bundle.findLocale(player), host.players, host.mapname), 5f, data.labelX, data.labelY));
+                        }, e -> Groups.player.each(player -> Call.label(player.con, Bundle.format("offlinePattern", Bundle.findLocale(player)), 5f, data.labelX, data.labelY)));
                     }))
                     .toArray(CompletableFuture<?>[]::new);
 
@@ -125,16 +113,16 @@ public class LightweightHub extends Plugin{
     }
 
     @Override
-    public void registerServerCommands(CommandHandler handler){
+    public void registerServerCommands(CommandHandler handler) {
 
-        handler.register("reload-cfg", "Перезапустить файл с конфигами.", args -> {
-            try{
+        handler.register("reload-hub", "Перезапустить файл конфигурации.", args -> {
+            try {
                 tasks.each(Timer.Task::cancel);
                 config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
                 Log.info("Успешно перезагружено.");
-            }catch(Throwable t){
+            } catch(Exception e) {
                 Log.err("Ошибка загрузки файла config-hub.json.");
-                Log.err(t);
+                Log.err(e);
             }
         });
     }
