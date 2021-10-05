@@ -3,7 +3,7 @@ package inside;
 import java.util.Arrays;
 import java.util.List;
 
-public class Config{
+public class Config {
 
     /** List with {@link HostData}. */
     public List<HostData> servers = Arrays.asList(
