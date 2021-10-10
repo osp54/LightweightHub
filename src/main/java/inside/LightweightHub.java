@@ -66,7 +66,7 @@ public class LightweightHub extends Plugin {
             cfg.writeString(gson.toJson(config = new Config()));
             Log.info("Файл конфигурации сгенерирован... (@)", cfg.absolutePath());
         } else {
-            loadConfig();
+            reloadConfig();
         }
 
         Events.on(ServerLoadEvent.class, event -> netServer.admins.addActionFilter(action -> false));
@@ -78,18 +78,18 @@ public class LightweightHub extends Plugin {
         });
 
         Events.on(PlayerJoin.class, event -> config.servers.forEach(data -> {
-            Call.label(event.player.con(), data.title, 10f, data.titleX, data.titleY);
-            net.pingHost(data.ip, data.port, host -> Call.label(event.player.con(), Bundle.format("onlinePattern", Bundle.findLocale(event.player), host.players, host.mapname), 10f, data.labelX, data.labelY),
-                    e -> Call.label(event.player.con(), Bundle.format("offlinePattern", Bundle.findLocale(event.player)), 10f, data.labelX, data.labelY));
+            Call.label(event.player.con(), data.title, 3f, data.titleX, data.titleY);
+            net.pingHost(data.ip, data.port, host -> Call.label(event.player.con(), Bundle.format("onlinePattern", Bundle.findLocale(event.player), host.players, host.mapname), 3f, data.labelX, data.labelY),
+                    e -> Call.label(event.player.con(), Bundle.format("offlinePattern", Bundle.findLocale(event.player)), 3f, data.labelX, data.labelY));
         }));
 
         Timer.schedule(() -> {
             CompletableFuture<?>[] tasks = config.servers.stream().map(data -> CompletableFuture.runAsync(() -> {
-                Core.app.post(() -> Call.label(data.title, 5f, data.titleX, data.titleY));
+                Core.app.post(() -> Call.label(data.title, 3f, data.titleX, data.titleY));
                 net.pingHost(data.ip, data.port, host -> {
                     counter.addAndGet(host.players);
-                    Groups.player.each(player -> Call.label(player.con, Bundle.format("onlinePattern", Bundle.findLocale(player), host.players, host.mapname), 5f, data.labelX, data.labelY));
-                }, e -> Groups.player.each(player -> Call.label(player.con, Bundle.format("offlinePattern", Bundle.findLocale(player)), 5f, data.labelX, data.labelY)));
+                    Groups.player.each(player -> Call.label(player.con, Bundle.format("onlinePattern", Bundle.findLocale(player), host.players, host.mapname), 3f, data.labelX, data.labelY));
+                }, e -> Groups.player.each(player -> Call.label(player.con, Bundle.format("offlinePattern", Bundle.findLocale(player)), 3f, data.labelX, data.labelY)));
             })).toArray(CompletableFuture<?>[]::new);
 
             CompletableFuture.allOf(tasks).thenRun(() -> {
@@ -102,10 +102,10 @@ public class LightweightHub extends Plugin {
 
     @Override
     public void registerServerCommands(CommandHandler handler) {
-        handler.register("reload-hub", "Перезапустить файл конфигурации.", args -> loadConfig());
+        handler.register("reload-hub", "Перезапустить файл конфигурации.", args -> reloadConfig());
     }
 
-    public void loadConfig() {
+    public void reloadConfig() {
         try {
             config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
             Log.info("Успешно перезагружено.");
