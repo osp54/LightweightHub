@@ -58,20 +58,15 @@ public class LightweightHub extends Plugin {
     @Override
     public void init() {
 
-        // Заменяем стандартного юнита на Поли
-        ((CoreBlock)Blocks.coreNucleus).unitType = UnitTypes.poly;
+        // Заменяем стандартного юнита на Beta
+        ((CoreBlock)Blocks.coreNucleus).unitType = UnitTypes.beta;
 
         Fi cfg = dataDirectory.child("config-hub.json");
         if (!cfg.exists()) {
             cfg.writeString(gson.toJson(config = new Config()));
             Log.info("Файл конфигурации сгенерирован... (@)", cfg.absolutePath());
         } else {
-            try {
-                config = gson.fromJson(cfg.reader(), Config.class);
-            } catch(Exception e) {
-                Log.err("Ошибка загрузки файла конфигурации. Что-то не так с форматом json.");
-                Log.err(e);
-            }
+            loadConfig();
         }
 
         Events.on(ServerLoadEvent.class, event -> netServer.admins.addActionFilter(action -> false));
@@ -79,7 +74,7 @@ public class LightweightHub extends Plugin {
         Events.on(TapEvent.class, event -> teleport(event.player, event.tile));
 
         Events.run(Trigger.update, () -> {
-            if (interval.get(60 * 0.1f)) Groups.player.each(this::teleport);
+            if (interval.get(3f)) Groups.player.each(this::teleport);
         });
 
         Events.on(PlayerJoin.class, event -> config.servers.forEach(data -> {
@@ -107,14 +102,16 @@ public class LightweightHub extends Plugin {
 
     @Override
     public void registerServerCommands(CommandHandler handler) {
-        handler.register("reload-hub", "Перезапустить файл конфигурации.", args -> {
-            try {
-                config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
-                Log.info("Успешно перезагружено.");
-            } catch(Exception e) {
-                Log.err("Ошибка загрузки файла config-hub.json.");
-                Log.err(e);
-            }
-        });
+        handler.register("reload-hub", "Перезапустить файл конфигурации.", args -> loadConfig());
+    }
+
+    public void loadConfig() {
+        try {
+            config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
+            Log.info("Успешно перезагружено.");
+        } catch(Exception e) {
+            Log.err("Ошибка загрузки файла config-hub.json.");
+            Log.err(e);
+        }
     }
 }
