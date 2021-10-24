@@ -25,15 +25,15 @@ public class HostData {
     /** The latter <b>Y</b> coordinate of the status label. */
     public int labelY;
 
-    public HostData(int port, int size, int teleportX, int teleportY, int titleX, int titleY) {
+    public HostData(int port, int size, int teleportX, int teleportY, int titleX, int titleY, int labelX, int labelY) {
         this.port = port;
         this.size = size;
         this.teleportX = teleportX;
         this.teleportY = teleportY;
         this.titleX = titleX;
         this.titleY = titleY;
-        this.labelX = titleX;
-        this.labelY = titleY - 36 - 16;
+        this.labelX = labelX;
+        this.labelY = labelY;
     }
 
     public boolean inDiapason(int x, int y) {
