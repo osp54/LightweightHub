@@ -2,7 +2,7 @@ package inside;
 
 public class HostData {
     /** Server IP address. */
-    public String ip = "localhost";
+    public String ip = "darkdustry.ml";
     /** Server port. */
     public int port;
     /** The teleport block size. */
@@ -14,7 +14,7 @@ public class HostData {
     public int teleportY;
 
     /** The teleport title i.e. server display name. */
-    public String title = "title";
+    public String title = "server";
     /** The latter <b>X</b> coordinate of the title signboard. */
     public int titleX;
     /** The latter <b>Y</b> coordinate of the title signboard. */
@@ -25,15 +25,15 @@ public class HostData {
     /** The latter <b>Y</b> coordinate of the status label. */
     public int labelY;
 
-    public HostData(int port, int size, int teleportX, int teleportY, int titleX, int titleY, int labelX, int labelY) {
+    public HostData(int port, int size, int teleportX, int teleportY, int titleX, int titleY) {
         this.port = port;
         this.size = size;
         this.teleportX = teleportX;
         this.teleportY = teleportY;
         this.titleX = titleX;
         this.titleY = titleY;
-        this.labelX = labelX;
-        this.labelY = labelY;
+        this.labelX = titleX;
+        this.labelY = titleY - 36 - 16;
     }
 
     public boolean inDiapason(int x, int y) {
