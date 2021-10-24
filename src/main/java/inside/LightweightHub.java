@@ -50,7 +50,7 @@ public class LightweightHub extends Plugin {
     public void teleport(final Player player, Tile tile) {
         config.servers.forEach(data -> {
             if (data.inDiapason(tile != null ? tile.x : player.tileX(), tile != null ? tile.y : player.tileY())) {
-                net.pingHost(data.ip, data.port, host -> Call.connect(player.con, data.ip, data.port), e -> {});
+                net.pingHost("localhost", data.port, host -> Call.connect(player.con, data.ip, data.port), e -> {});
             }
         });
     }
@@ -86,7 +86,7 @@ public class LightweightHub extends Plugin {
         Timer.schedule(() -> {
             CompletableFuture<?>[] tasks = config.servers.stream().map(data -> CompletableFuture.runAsync(() -> {
                 Core.app.post(() -> Call.label(data.title, 3f, data.titleX, data.titleY));
-                net.pingHost(data.ip, data.port, host -> {
+                net.pingHost("localhost", data.port, host -> {
                     counter.addAndGet(host.players);
                     Groups.player.each(player -> Call.label(player.con, Bundle.format("onlinePattern", Bundle.findLocale(player), host.players, host.mapname), 3f, data.labelX, data.labelY));
                 }, e -> Groups.player.each(player -> Call.label(player.con, Bundle.format("offlinePattern", Bundle.findLocale(player)), 3f, data.labelX, data.labelY)));
