@@ -50,7 +50,7 @@ public class LightweightHub extends Plugin {
     public void teleport(final Player player, Tile tile) {
         config.servers.forEach(data -> {
             if (data.inDiapason(tile != null ? tile.x : player.tileX(), tile != null ? tile.y : player.tileY())) {
-                net.pingHost(data.ip, data.port, host -> Call.connect(player.con, data.ip, data.port), e -> {});
+                net.pingHost("localhost", data.port, host -> Call.connect(player.con, data.ip, data.port), e -> {});
             }
         });
     }
@@ -58,20 +58,15 @@ public class LightweightHub extends Plugin {
     @Override
     public void init() {
 
-        // Заменяем стандартного юнита на Поли
-        ((CoreBlock)Blocks.coreNucleus).unitType = UnitTypes.poly;
+        // Заменяем стандартного юнита на Beta
+        ((CoreBlock)Blocks.coreNucleus).unitType = UnitTypes.beta;
 
         Fi cfg = dataDirectory.child("config-hub.json");
         if (!cfg.exists()) {
             cfg.writeString(gson.toJson(config = new Config()));
             Log.info("Файл конфигурации сгенерирован... (@)", cfg.absolutePath());
         } else {
-            try {
-                config = gson.fromJson(cfg.reader(), Config.class);
-            } catch(Exception e) {
-                Log.err("Ошибка загрузки файла конфигурации. Что-то не так с форматом json.");
-                Log.err(e);
-            }
+            reloadConfig();
         }
 
         Events.on(ServerLoadEvent.class, event -> netServer.admins.addActionFilter(action -> false));
@@ -79,22 +74,22 @@ public class LightweightHub extends Plugin {
         Events.on(TapEvent.class, event -> teleport(event.player, event.tile));
 
         Events.run(Trigger.update, () -> {
-            if (interval.get(60 * 0.1f)) Groups.player.each(this::teleport);
+            if (interval.get(3f)) Groups.player.each(this::teleport);
         });
 
         Events.on(PlayerJoin.class, event -> config.servers.forEach(data -> {
-            Call.label(event.player.con(), data.title, 10f, data.titleX, data.titleY);
-            net.pingHost(data.ip, data.port, host -> Call.label(event.player.con(), Bundle.format("onlinePattern", Bundle.findLocale(event.player), host.players, host.mapname), 10f, data.labelX, data.labelY),
-                    e -> Call.label(event.player.con(), Bundle.format("offlinePattern", Bundle.findLocale(event.player)), 10f, data.labelX, data.labelY));
+            Call.label(event.player.con(), data.title, 3f, data.titleX, data.titleY);
+            net.pingHost(data.ip, data.port, host -> Call.label(event.player.con(), Bundle.format("onlinePattern", Bundle.findLocale(event.player), host.players, host.mapname), 3f, data.labelX, data.labelY),
+                    e -> Call.label(event.player.con(), Bundle.format("offlinePattern", Bundle.findLocale(event.player)), 3f, data.labelX, data.labelY));
         }));
 
         Timer.schedule(() -> {
             CompletableFuture<?>[] tasks = config.servers.stream().map(data -> CompletableFuture.runAsync(() -> {
-                Core.app.post(() -> Call.label(data.title, 5f, data.titleX, data.titleY));
-                net.pingHost(data.ip, data.port, host -> {
+                Core.app.post(() -> Call.label(data.title, 3f, data.titleX, data.titleY));
+                net.pingHost("localhost", data.port, host -> {
                     counter.addAndGet(host.players);
-                    Groups.player.each(player -> Call.label(player.con, Bundle.format("onlinePattern", Bundle.findLocale(player), host.players, host.mapname), 5f, data.labelX, data.labelY));
-                }, e -> Groups.player.each(player -> Call.label(player.con, Bundle.format("offlinePattern", Bundle.findLocale(player)), 5f, data.labelX, data.labelY)));
+                    Groups.player.each(player -> Call.label(player.con, Bundle.format("onlinePattern", Bundle.findLocale(player), host.players, host.mapname), 3f, data.labelX, data.labelY));
+                }, e -> Groups.player.each(player -> Call.label(player.con, Bundle.format("offlinePattern", Bundle.findLocale(player)), 3f, data.labelX, data.labelY)));
             })).toArray(CompletableFuture<?>[]::new);
 
             CompletableFuture.allOf(tasks).thenRun(() -> {
@@ -107,14 +102,16 @@ public class LightweightHub extends Plugin {
 
     @Override
     public void registerServerCommands(CommandHandler handler) {
-        handler.register("reload-hub", "Перезапустить файл конфигурации.", args -> {
-            try {
-                config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
-                Log.info("Успешно перезагружено.");
-            } catch(Exception e) {
-                Log.err("Ошибка загрузки файла config-hub.json.");
-                Log.err(e);
-            }
-        });
+        handler.register("reload-hub", "Перезапустить файл конфигурации.", args -> reloadConfig());
+    }
+
+    public void reloadConfig() {
+        try {
+            config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
+            Log.info("Успешно перезагружено.");
+        } catch(Exception e) {
+            Log.err("Ошибка загрузки файла config-hub.json.");
+            Log.err(e);
+        }
     }
 }

@@ -2,7 +2,7 @@ package inside;
 
 public class HostData {
     /** Server IP address. */
-    public String ip = "localhost";
+    public String ip = "darkdustry.ml";
     /** Server port. */
     public int port;
     /** The teleport block size. */
@@ -14,7 +14,7 @@ public class HostData {
     public int teleportY;
 
     /** The teleport title i.e. server display name. */
-    public String title = "title";
+    public String title = "server";
     /** The latter <b>X</b> coordinate of the title signboard. */
     public int titleX;
     /** The latter <b>Y</b> coordinate of the title signboard. */
