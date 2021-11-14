@@ -5,13 +5,13 @@ import arc.struct.ObjectMap;
 import arc.struct.StringMap;
 import arc.util.Strings;
 import arc.util.Structs;
-import mindustry.Vars;
 import mindustry.gen.Iconc;
-import mindustry.gen.Player;
 
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.ResourceBundle;
+
+import static mindustry.Vars.mods;
 
 public class Bundle {
 
@@ -26,9 +26,9 @@ public class Bundle {
     }
 
     static {
-        Fi[] files = Vars.mods.list().find(mod -> mod.main instanceof LightweightHub).root.child("bundles").list();
+        Fi[] files = mods.list().find(mod -> mod.main instanceof LightweightHub).root.child("bundles").list();
         supportedLocales = new Locale[files.length + 1];
-        supportedLocales[supportedLocales.length - 1] = new Locale("router"); // router
+        supportedLocales[supportedLocales.length - 1] = new Locale("router");
 
         for (int i = 0; i < files.length; i++) {
             String code = files[i].nameWithoutExtension();
@@ -64,7 +64,7 @@ public class Bundle {
 
     private static StringMap getOrLoad(Locale locale) {
         StringMap bundle = bundles.get(locale);
-        if (bundle == null && locale.getDisplayName().equals("router")) { // router
+        if (bundle == null && locale.getDisplayName().equals("router")) {
             StringMap router = new StringMap();
             getOrLoad(defaultLocale()).each((k, v) -> router.put(k, Strings.stripColors(v).replaceAll("[\\d\\D]", Character.toString(Iconc.blockRouter))));
             bundles.put(locale, bundle = router);
@@ -81,10 +81,5 @@ public class Bundle {
             properties.put(s, bundle.getString(s));
         }
         return properties;
-    }
-
-    public static Locale findLocale(Player player) {
-        Locale locale = Structs.find(supportedLocales, l -> l.toString().equals(player.locale) || player.locale.startsWith(l.toString()));
-        return locale != null ? locale : defaultLocale();
     }
 }
