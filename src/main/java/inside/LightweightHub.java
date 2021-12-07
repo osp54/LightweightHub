@@ -23,16 +23,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static inside.Bundle.defaultLocale;
 import static inside.Bundle.supportedLocales;
-import static mindustry.Vars.net;
-import static mindustry.Vars.dataDirectory;
-import static mindustry.Vars.netServer;
+import static mindustry.Vars.*;
 
 public class LightweightHub extends Plugin {
 
-    public static Config config;
-    private final Interval interval = new Interval();
-    private final AtomicInteger counter = new AtomicInteger();
+    private static final float refreshDuration = 2.5f;
+    private static final float delaySeconds = 1.5f;
+    private static final float teleportUpdateInterval = 3f;
 
+    public static Config config;
     public final Gson gson = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES)
             .setPrettyPrinting()
@@ -40,10 +39,15 @@ public class LightweightHub extends Plugin {
             .disableHtmlEscaping()
             .create();
 
-    private static final float refreshDuration = 2.5f;
-    private static final float teleportUpdateInterval = 3f;
+    private final Interval interval = new Interval();
+    private final AtomicInteger counter = new AtomicInteger();
 
-    public void teleport(final Player player){
+    public static Locale findLocale(Player player) {
+        Locale locale = Structs.find(supportedLocales, l -> l.toString().equals(player.locale) || player.locale.startsWith(l.toString()));
+        return locale != null ? locale : defaultLocale();
+    }
+
+    public void teleport(final Player player) {
         teleport(player, null);
     }
 
@@ -84,7 +88,7 @@ public class LightweightHub extends Plugin {
         Timer.schedule(() -> {
             CompletableFuture<?>[] tasks = config.servers.stream().map(data -> CompletableFuture.runAsync(() -> {
                 Core.app.post(() -> Call.label(data.title, 3f, data.titleX, data.titleY));
-                net.pingHost("localhost", data.port, host -> {
+                net.pingHost(data.ip, data.port, host -> {
                     counter.addAndGet(host.players);
                     Groups.player.each(player -> Call.label(player.con, Bundle.format("onlinePattern", findLocale(player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY));
                 }, e -> Groups.player.each(player -> Call.label(player.con, Bundle.format("offlinePattern", findLocale(player)), refreshDuration, data.labelX, data.labelY)));
@@ -95,7 +99,7 @@ public class LightweightHub extends Plugin {
                 Core.settings.put("totalPlayers", counter.get());
                 counter.set(0);
             }).join();
-        }, 1.5f, refreshDuration);
+        }, delaySeconds, refreshDuration);
     }
 
     @Override
@@ -107,15 +111,9 @@ public class LightweightHub extends Plugin {
         try {
             config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
             Log.info("Файл конфигурации успешно загружен.");
-        } catch(Exception e) {
+        } catch (Exception e) {
             Log.err("Ошибка загрузки файла config-hub.json.");
             Log.err(e);
         }
-    }
-
-
-    public static Locale findLocale(Player player) {
-        Locale locale = Structs.find(supportedLocales, l -> l.toString().equals(player.locale) || player.locale.startsWith(l.toString()));
-        return locale != null ? locale : defaultLocale();
     }
 }
