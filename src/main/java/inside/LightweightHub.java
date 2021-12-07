@@ -8,7 +8,6 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import mindustry.game.EventType.PlayerJoin;
-import mindustry.game.EventType.ServerLoadEvent;
 import mindustry.game.EventType.TapEvent;
 import mindustry.game.EventType.Trigger;
 import mindustry.gen.Call;
@@ -69,8 +68,6 @@ public class LightweightHub extends Plugin {
             loadConfig();
         }
 
-        Events.on(ServerLoadEvent.class, event -> netServer.admins.addActionFilter(action -> false));
-
         Events.on(TapEvent.class, event -> teleport(event.player, event.tile));
 
         Events.run(Trigger.update, () -> {
@@ -100,6 +97,8 @@ public class LightweightHub extends Plugin {
                 counter.set(0);
             }).join();
         }, delaySeconds, refreshDuration);
+
+        netServer.admins.addActionFilter(action -> false);
     }
 
     @Override
