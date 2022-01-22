@@ -79,18 +79,20 @@ public class LightweightHub extends Plugin {
 
         Events.on(PlayerJoin.class, event -> config.servers.forEach(data -> {
             Call.label(event.player.con(), data.title, refreshDuration, data.titleX, data.titleY);
-            net.pingHost(data.ip, data.port,
-                    host -> Call.label(event.player.con(), Bundle.format("onlinePattern", findLocale(event.player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY),
-                    e -> Call.label(event.player.con(), Bundle.format("offlinePattern", findLocale(event.player)), refreshDuration, data.labelX, data.labelY)
-            );
+            net.pingHost(data.ip, data.port, host -> {
+                Call.label(event.player.con, host.name, refreshDuration, data.titleX, data.titleY);
+                Call.label(event.player.con, Bundle.format("onlinePattern", findLocale(event.player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY);
+            }, e -> Call.label(event.player.con(), Bundle.format("offlinePattern", findLocale(event.player)), refreshDuration, data.labelX, data.labelY));
         }));
 
         Timer.schedule(() -> {
             CompletableFuture<?>[] tasks = config.servers.stream().map(data -> CompletableFuture.runAsync(() -> {
-                Core.app.post(() -> Call.label(data.title, refreshDuration, data.titleX, data.titleY));
                 net.pingHost(data.ip, data.port, host -> {
                     counter.addAndGet(host.players);
-                    Groups.player.each(player -> Call.label(player.con, Bundle.format("onlinePattern", findLocale(player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY));
+                    Groups.player.each(player -> {
+                        Call.label(player.con, host.name, refreshDuration, data.titleX, data.titleY);
+                        Call.label(player.con, Bundle.format("onlinePattern", findLocale(event.player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY);
+                    });
                 }, e -> Groups.player.each(player -> Call.label(player.con, Bundle.format("offlinePattern", findLocale(player)), refreshDuration, data.labelX, data.labelY)));
             })).toArray(CompletableFuture<?>[]::new);
 
