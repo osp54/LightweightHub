@@ -26,31 +26,28 @@ import static mindustry.Vars.*;
 
 public class LightweightHub extends Plugin {
 
-    private static final float refreshDuration = 2.5f;
-    private static final float delaySeconds = 1.5f;
-    private static final float teleportUpdateInterval = 3f;
+    public static final float refreshDuration = 2.5f;
+    public static final float delaySeconds = 1.5f;
+    public static final float teleportUpdateInterval = 3f;
+
+    public static final String configFileName = "config-hub.json";
 
     public static Config config;
-    public final Gson gson = new GsonBuilder()
-            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES)
-            .setPrettyPrinting()
-            .serializeNulls()
-            .disableHtmlEscaping()
-            .create();
+    public final Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES).setPrettyPrinting().serializeNulls().disableHtmlEscaping().create();
 
-    private final Interval interval = new Interval();
-    private final AtomicInteger counter = new AtomicInteger();
+    public static final Interval interval = new Interval();
+    public static final AtomicInteger counter = new AtomicInteger();
 
     public static Locale findLocale(Player player) {
         Locale locale = Structs.find(supportedLocales, l -> l.toString().equals(player.locale) || player.locale.startsWith(l.toString()));
         return locale != null ? locale : defaultLocale();
     }
 
-    public void teleport(final Player player) {
+    public void teleport(Player player) {
         teleport(player, null);
     }
 
-    public void teleport(final Player player, Tile tile) {
+    public void teleport(Player player, Tile tile) {
         config.servers.forEach(data -> {
             if (data.inDiapason(tile != null ? tile.x : player.tileX(), tile != null ? tile.y : player.tileY())) {
                 net.pingHost(data.ip, data.port, host -> Call.connect(player.con, data.ip, data.port), e -> {});
@@ -60,12 +57,18 @@ public class LightweightHub extends Plugin {
 
     @Override
     public void init() {
-        Fi cfg = dataDirectory.child("config-hub.json");
-        if (!cfg.exists()) {
-            cfg.writeString(gson.toJson(config = new Config()));
-            Log.info("Файл конфигурации сгенерирован... (@)", cfg.absolutePath());
+        Fi configFile = dataDirectory.child(configFileName);
+        if (configFile.exists()) {
+            try {
+                config = gson.fromJson(configFile.reader(), Config.class);
+                Log.info("[Hub] Конфигурация загружена. (@)", configFile.absolutePath());
+            } catch (Exception e) {
+                Log.err("[Hub] Файл конфигурации не загружен.");
+                Log.err(e);
+            }
         } else {
-            loadConfig();
+            configFile.writeString(gson.toJson(config = new Config()));
+            Log.info("[Hub] Файл конфигурации сгенерирован. (@)", configFile.absolutePath());
         }
 
         Events.on(TapEvent.class, event -> teleport(event.player, event.tile));
@@ -84,7 +87,7 @@ public class LightweightHub extends Plugin {
 
         Timer.schedule(() -> {
             CompletableFuture<?>[] tasks = config.servers.stream().map(data -> CompletableFuture.runAsync(() -> {
-                Core.app.post(() -> Call.label(data.title, 3f, data.titleX, data.titleY));
+                Core.app.post(() -> Call.label(data.title, refreshDuration, data.titleX, data.titleY));
                 net.pingHost(data.ip, data.port, host -> {
                     counter.addAndGet(host.players);
                     Groups.player.each(player -> Call.label(player.con, Bundle.format("onlinePattern", findLocale(player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY));
@@ -103,16 +106,14 @@ public class LightweightHub extends Plugin {
 
     @Override
     public void registerServerCommands(CommandHandler handler) {
-        handler.register("reload-hub", "Перезапустить файл конфигурации.", args -> loadConfig());
-    }
-
-    public void loadConfig() {
-        try {
-            config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
-            Log.info("Файл конфигурации успешно загружен.");
-        } catch (Exception e) {
-            Log.err("Ошибка загрузки файла config-hub.json.");
-            Log.err(e);
-        }
+        handler.register("reload-hub", "Load Hub configuration file.", args -> {
+            try {
+                config = gson.fromJson(dataDirectory.child(configFileName).readString(), Config.class);
+                Log.info("[Hub] Файл конфигурации успешно перезагружен.");
+            } catch (Exception e) {
+                Log.err("[Hub] Файл конфигурации не загружен.");
+                Log.err(e);
+            }
+        });
     }
 }
