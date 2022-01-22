@@ -78,7 +78,6 @@ public class LightweightHub extends Plugin {
         });
 
         Events.on(PlayerJoin.class, event -> config.servers.forEach(data -> {
-            Call.label(event.player.con(), data.title, refreshDuration, data.titleX, data.titleY);
             net.pingHost(data.ip, data.port, host -> {
                 Call.label(event.player.con, host.name, refreshDuration, data.titleX, data.titleY);
                 Call.label(event.player.con, Bundle.format("onlinePattern", findLocale(event.player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY);
@@ -91,7 +90,7 @@ public class LightweightHub extends Plugin {
                     counter.addAndGet(host.players);
                     Groups.player.each(player -> {
                         Call.label(player.con, host.name, refreshDuration, data.titleX, data.titleY);
-                        Call.label(player.con, Bundle.format("onlinePattern", findLocale(event.player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY);
+                        Call.label(player.con, Bundle.format("onlinePattern", findLocale(player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY);
                     });
                 }, e -> Groups.player.each(player -> Call.label(player.con, Bundle.format("offlinePattern", findLocale(player)), refreshDuration, data.labelX, data.labelY)));
             })).toArray(CompletableFuture<?>[]::new);
