@@ -13,8 +13,6 @@ public class HostData {
     /** The latter <b>Y</b> coordinate of the teleport border. */
     public int teleportY;
 
-    /** The teleport title i.e. server display name. */
-    public String title = "server";
     /** The latter <b>X</b> coordinate of the title signboard. */
     public int titleX;
     /** The latter <b>Y</b> coordinate of the title signboard. */
