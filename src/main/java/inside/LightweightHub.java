@@ -7,9 +7,7 @@ import arc.util.*;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import mindustry.game.EventType.PlayerJoin;
-import mindustry.game.EventType.TapEvent;
-import mindustry.game.EventType.Trigger;
+import mindustry.game.EventType.*;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
@@ -83,6 +81,8 @@ public class LightweightHub extends Plugin {
                 Call.label(event.player.con, Bundle.format("onlinePattern", findLocale(event.player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY);
             }, e -> Call.label(event.player.con(), Bundle.format("offlinePattern", findLocale(event.player)), refreshDuration, data.labelX, data.labelY));
         }));
+
+        Events.on(WorldLoadEvent.class, event -> state.rules.teams.get(state.rules.defaultTeam).cheat = true);
 
         Timer.schedule(() -> {
             CompletableFuture<?>[] tasks = config.servers.stream().map(data -> CompletableFuture.runAsync(() -> {
