@@ -7,11 +7,15 @@ import arc.util.*;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import mindustry.game.EventType.*;
+import mindustry.game.EventType.PlayerJoin;
+import mindustry.game.EventType.TapEvent;
+import mindustry.game.EventType.Trigger;
+import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.mod.Plugin;
+import mindustry.net.Host;
 import mindustry.world.Tile;
 
 import java.util.Locale;
@@ -36,9 +40,18 @@ public class LightweightHub extends Plugin {
     public static final Interval interval = new Interval();
     public static final AtomicInteger counter = new AtomicInteger();
 
-    public static Locale findLocale(Player player) {
+    public Locale findLocale(Player player) {
         Locale locale = Structs.find(supportedLocales, l -> l.toString().equals(player.locale) || player.locale.startsWith(l.toString()));
         return locale != null ? locale : defaultLocale();
+    }
+
+    public void showOnlineLabel(Player player, HostData data, Host host) {
+        Call.label(player.con, host.name, refreshDuration, data.titleX(), data.titleY());
+        Call.label(player.con, Bundle.format("onlinePattern", findLocale(player), host.players, host.mapname), refreshDuration, data.labelX(), data.labelY());
+    }
+
+    public void showOfflineLabel(Player player, HostData data) {
+        Call.label(player.con, Bundle.format("offlinePattern", findLocale(player)), refreshDuration, data.labelX(), data.labelY());
     }
 
     public void teleport(Player player) {
@@ -48,7 +61,7 @@ public class LightweightHub extends Plugin {
     public void teleport(Player player, Tile tile) {
         config.servers.forEach(data -> {
             if (data.inDiapason(tile != null ? tile.x : player.tileX(), tile != null ? tile.y : player.tileY())) {
-                net.pingHost(data.ip, data.port, host -> Call.connect(player.con, data.ip, data.port), e -> {});
+                data.pingHost(host -> Call.connect(player.con, data.ip, data.port), e -> {});
             }
         });
     }
@@ -75,30 +88,19 @@ public class LightweightHub extends Plugin {
             if (interval.get(teleportUpdateInterval)) Groups.player.each(this::teleport);
         });
 
-        Events.on(PlayerJoin.class, event -> config.servers.forEach(data -> {
-            net.pingHost(data.ip, data.port, host -> {
-                Call.label(event.player.con, host.name, refreshDuration, data.titleX, data.titleY);
-                Call.label(event.player.con, Bundle.format("onlinePattern", findLocale(event.player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY);
-            }, e -> Call.label(event.player.con(), Bundle.format("offlinePattern", findLocale(event.player)), refreshDuration, data.labelX, data.labelY));
-        }));
+        Events.on(PlayerJoin.class, event -> config.servers.forEach(data -> data.pingHost(host -> showOnlineLabel(event.player, data, host), e -> showOfflineLabel(event.player, data))));
 
         Events.on(WorldLoadEvent.class, event -> state.rules.teams.get(state.rules.defaultTeam).cheat = true);
 
         Timer.schedule(() -> {
-            CompletableFuture<?>[] tasks = config.servers.stream().map(data -> CompletableFuture.runAsync(() -> {
-                net.pingHost(data.ip, data.port, host -> {
-                    counter.addAndGet(host.players);
-                    Groups.player.each(player -> {
-                        Call.label(player.con, host.name, refreshDuration, data.titleX, data.titleY);
-                        Call.label(player.con, Bundle.format("onlinePattern", findLocale(player), host.players, host.mapname), refreshDuration, data.labelX, data.labelY);
-                    });
-                }, e -> Groups.player.each(player -> Call.label(player.con, Bundle.format("offlinePattern", findLocale(player)), refreshDuration, data.labelX, data.labelY)));
-            })).toArray(CompletableFuture<?>[]::new);
+            CompletableFuture<?>[] tasks = config.servers.stream().map(data -> CompletableFuture.runAsync(() -> data.pingHost(host -> {
+                counter.addAndGet(host.players);
+                Groups.player.each(player -> showOnlineLabel(player, data, host));
+            }, e -> Groups.player.each(player -> showOfflineLabel(player, data))))).toArray(CompletableFuture<?>[]::new);
 
             CompletableFuture.allOf(tasks).thenRun(() -> {
                 counter.addAndGet(Groups.player.size());
-                Core.settings.put("totalPlayers", counter.get());
-                counter.set(0);
+                Core.settings.put("totalPlayers", counter.getAndSet(0));
             }).join();
         }, delaySeconds, refreshDuration);
 

@@ -1,40 +1,41 @@
 package inside;
 
+import arc.func.Cons;
+import mindustry.net.Host;
+
+import static mindustry.Vars.*;
+
 public class HostData {
-    /** Server IP address. */
+
     public String ip = "darkdustry.ml";
-    /** Server port. */
     public int port;
-    /** The teleport block size. */
+
     public int size;
 
-    /** The latter <b>X</b> coordinate of the teleport border. */
     public int teleportX;
-    /** The latter <b>Y</b> coordinate of the teleport border. */
     public int teleportY;
 
-    /** The latter <b>X</b> coordinate of the title signboard. */
-    public int titleX;
-    /** The latter <b>Y</b> coordinate of the title signboard. */
-    public int titleY;
+    public int titleX() {
+        return teleportX * tilesize + 4;
+    }
 
-    /** The latter <b>X</b> coordinate of the status label. */
-    public int labelX;
-    /** The latter <b>Y</b> coordinate of the status label. */
-    public int labelY;
+    public int titleY() {
+        return teleportY * tilesize + 32;
+    }
 
-    public HostData(int port, int size, int teleportX, int teleportY, int titleX, int titleY, int labelX, int labelY) {
-        this.port = port;
-        this.size = size;
-        this.teleportX = teleportX;
-        this.teleportY = teleportY;
-        this.titleX = titleX;
-        this.titleY = titleY;
-        this.labelX = labelX;
-        this.labelY = labelY;
+    public int labelX() {
+        return teleportX * tilesize + 4;
+    }
+
+    public int labelY() {
+        return teleportY * tilesize - 20;
     }
 
     public boolean inDiapason(int x, int y) {
         return x <= teleportX + size && x >= teleportX && y >= teleportY && y <= teleportY + size;
+    }
+
+    public void pingHost(Cons<Host> valid, Cons<Exception> failed) {
+        net.pingHost(ip, port, valid, failed);
     }
 }
