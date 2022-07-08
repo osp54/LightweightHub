@@ -15,11 +15,12 @@ import static mindustry.Vars.mods;
 
 public class Bundle {
 
-    public static final Locale[] supportedLocales;
+    public static Locale[] supportedLocales;
+
     private static final ObjectMap<Locale, StringMap> bundles = new ObjectMap<>();
     private static final ObjectMap<Locale, MessageFormat> formats = new ObjectMap<>();
 
-    static {
+    public static void load() {
         Fi[] files = mods.list().find(mod -> mod.main instanceof LightweightHub).root.child("bundles").list();
         supportedLocales = new Locale[files.length + 1];
         supportedLocales[supportedLocales.length - 1] = new Locale("router");
@@ -38,6 +39,11 @@ public class Bundle {
 
     public static Locale defaultLocale() {
         return Structs.find(supportedLocales, l -> l.toString().equals("en"));
+    }
+
+    public static Locale findLocale(String name) {
+        Locale locale = Structs.find(supportedLocales, l -> name.equals(l.toString()) || name.startsWith(l.toString()));
+        return locale != null ? locale : defaultLocale();
     }
 
     public static String get(String key, Locale locale) {
