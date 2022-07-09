@@ -23,8 +23,16 @@ public class Server {
     public float labelX;
     public float labelY;
 
+    public float tileX() {
+        return x * tilesize;
+    }
+
+    public float tileY() {
+        return y * tilesize;
+    }
+
     public boolean inDiapason(int x, int y) {
-        return x <= this.x + size / 2f && x >= this.x - size / 2f && y <= this.y + size / 2f && y >= this.y - size / 2f;
+        return x <= this.x + size && x >= this.x - size && y <= this.y + size && y >= this.y - size;
     }
 
     public void pingHost(Cons<Host> valid, Cons<Exception> failed) {

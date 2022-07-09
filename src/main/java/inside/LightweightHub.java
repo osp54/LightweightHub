@@ -75,10 +75,10 @@ public class LightweightHub extends Plugin {
 
         Events.run(Trigger.update, () -> {
             config.servers.forEach(server -> {
-                Call.effect(Fx.hitFlamePlasma, server.x * tilesize - server.size * 4, server.y * tilesize - server.size * 4, 45f, Color.white);
-                Call.effect(Fx.hitFlamePlasma, server.x * tilesize + server.size * 4, server.y * tilesize - server.size * 4, 135f, Color.white);
-                Call.effect(Fx.hitFlamePlasma, server.x * tilesize - server.size * 4, server.y * tilesize + server.size * 4, 315f, Color.white);
-                Call.effect(Fx.hitFlamePlasma, server.x * tilesize + server.size * 4, server.y * tilesize + server.size * 4, 225f, Color.white);
+                Call.effect(Fx.hitFlamePlasma, server.tileX() - server.size * tilesize, server.tileY() - server.size * tilesize, 45f, Color.white);
+                Call.effect(Fx.hitFlamePlasma, server.tileX() + server.size * tilesize, server.tileY() - server.size * tilesize, 135f, Color.white);
+                Call.effect(Fx.hitFlamePlasma, server.tileX() + server.size * tilesize, server.tileY() + server.size * tilesize, 225f, Color.white);
+                Call.effect(Fx.hitFlamePlasma, server.tileX() - server.size * tilesize, server.tileY() + server.size * tilesize, 315f, Color.white);
             });
 
             if (interval.get(teleportUpdateInterval)) Groups.player.each(LightweightHub::teleport);
