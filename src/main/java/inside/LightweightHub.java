@@ -20,6 +20,7 @@ import mindustry.mod.Plugin;
 import mindustry.net.Administration.ActionType;
 import mindustry.net.Host;
 import mindustry.world.Tile;
+import mindustry.world.blocks.logic.MessageBlock;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,8 +30,8 @@ import static mindustry.Vars.*;
 
 public class LightweightHub extends Plugin {
 
-    public static final float refreshDuration = 2.5f;
-    public static final float delaySeconds = 1.5f;
+    public static final float delaySeconds = 3f;
+    public static final float refreshDuration = 6f;
     public static final float teleportUpdateInterval = 3f;
 
     public static final Interval interval = new Interval();
@@ -81,7 +82,9 @@ public class LightweightHub extends Plugin {
                 Call.effect(Fx.hitFlamePlasma, server.tileX() - server.size * tilesize, server.tileY() + server.size * tilesize, 315f, Color.white);
             });
 
-            if (interval.get(teleportUpdateInterval)) Groups.player.each(LightweightHub::teleport);
+            if (interval.get(teleportUpdateInterval)) {
+                Groups.player.each(LightweightHub::teleport);
+            }
         });
 
         Events.on(TapEvent.class, event -> teleport(event.player, event.tile));
@@ -102,7 +105,7 @@ public class LightweightHub extends Plugin {
             }).join();
         }, delaySeconds, refreshDuration);
 
-        netServer.admins.addActionFilter(action -> (action.type != ActionType.placeBlock && action.type != ActionType.breakBlock));
+        netServer.admins.addActionFilter(action -> action.type != ActionType.placeBlock && action.type != ActionType.breakBlock && !(action.tile.block() instanceof MessageBlock));
     }
 
     @Override
