@@ -22,10 +22,10 @@ import mindustry.net.Host;
 import mindustry.world.Tile;
 import mindustry.world.blocks.logic.MessageBlock;
 
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static inside.Bundle.findLocale;
 import static mindustry.Vars.*;
 
 public class LightweightHub extends Plugin {
@@ -42,11 +42,11 @@ public class LightweightHub extends Plugin {
 
     public static void showOnlineLabel(Player player, Server server, Host host) {
         Call.label(player.con, host.name, refreshDuration, server.titleX * tilesize, server.titleY * tilesize);
-        Call.label(player.con, Bundle.format("server.offline", findLocale(player.locale), host.players, host.mapname), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
+        Call.label(player.con, Bundle.format("server.offline", findLocale(player), host.players, host.mapname), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
     }
 
     public static void showOfflineLabel(Player player, Server server) {
-        Call.label(player.con, Bundle.format("server.online", findLocale(player.locale)), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
+        Call.label(player.con, Bundle.format("server.online", findLocale(player)), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
     }
 
     public static void teleport(Player player) {
@@ -114,5 +114,10 @@ public class LightweightHub extends Plugin {
             config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
             Log.info("[Hub] Конфигурация успешно перезагружена.");
         });
+    }
+
+    public static Locale findLocale(Player player) {
+        Locale locale = Structs.find(Bundle.supportedLocales, l -> player.locale.equals(l.toString()) || player.locale.startsWith(l.toString()));
+        return locale != null ? locale : Bundle.defaultLocale;
     }
 }
