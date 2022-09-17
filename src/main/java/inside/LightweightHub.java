@@ -2,31 +2,22 @@ package inside;
 
 import arc.Core;
 import arc.Events;
-import arc.files.Fi;
 import arc.graphics.Color;
 import arc.util.*;
-import com.google.gson.FieldNamingPolicy;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import mindustry.content.Fx;
-import mindustry.game.EventType.PlayerJoin;
-import mindustry.game.EventType.TapEvent;
-import mindustry.game.EventType.Trigger;
-import mindustry.game.EventType.WorldLoadEvent;
-import mindustry.gen.Call;
-import mindustry.gen.Groups;
-import mindustry.gen.Player;
+import mindustry.game.EventType.*;
+import mindustry.gen.*;
 import mindustry.mod.Plugin;
-import mindustry.net.Administration.ActionType;
 import mindustry.net.Host;
 import mindustry.world.Tile;
-import mindustry.world.blocks.logic.MessageBlock;
 
-import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static inside.Bundle.*;
 import static mindustry.Vars.*;
+import static mindustry.net.Administration.ActionType.*;
 
 public class LightweightHub extends Plugin {
 
@@ -42,11 +33,11 @@ public class LightweightHub extends Plugin {
 
     public static void showOnlineLabel(Player player, Server server, Host host) {
         Call.label(player.con, host.name, refreshDuration, server.titleX * tilesize, server.titleY * tilesize);
-        Call.label(player.con, Bundle.format("server.offline", findLocale(player), host.players, host.mapname), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
+        Call.label(player.con, format("server.offline", findLocale(player), host.players, host.mapname), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
     }
 
     public static void showOfflineLabel(Player player, Server server) {
-        Call.label(player.con, Bundle.format("server.online", findLocale(player)), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
+        Call.label(player.con, format("server.online", findLocale(player)), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
     }
 
     public static void teleport(Player player) {
@@ -63,7 +54,7 @@ public class LightweightHub extends Plugin {
 
     @Override
     public void init() {
-        Fi configFile = dataDirectory.child("config-hub.json");
+        var configFile = dataDirectory.child("config-hub.json");
         if (configFile.exists()) {
             config = gson.fromJson(configFile.reader(), Config.class);
             Log.info("[Hub] Конфигурация успешно загружена. (@)", configFile.absolutePath());
@@ -73,6 +64,8 @@ public class LightweightHub extends Plugin {
         }
 
         Bundle.load();
+
+        content.units().each(unit -> unit.payloadCapacity = 0f);
 
         Events.run(Trigger.update, () -> {
             config.servers.forEach(server -> {
@@ -91,10 +84,14 @@ public class LightweightHub extends Plugin {
 
         Events.on(PlayerJoin.class, event -> config.servers.forEach(server -> server.pingHost(host -> showOnlineLabel(event.player, server, host), e -> showOfflineLabel(event.player, server))));
 
-        Events.on(WorldLoadEvent.class, event -> state.rules.teams.get(state.rules.defaultTeam).cheat = true);
+        Events.on(WorldLoadEvent.class, event -> {
+            state.rules.blockDamageMultiplier = 0f;
+            state.rules.unitDamageMultiplier = 0f;
+            state.rules.teams.get(state.rules.defaultTeam).cheat = true;
+        });
 
         Timer.schedule(() -> {
-            CompletableFuture<?>[] tasks = config.servers.stream().map(server -> CompletableFuture.runAsync(() -> server.pingHost(host -> {
+            var tasks = config.servers.stream().map(server -> CompletableFuture.runAsync(() -> server.pingHost(host -> {
                 counter.addAndGet(host.players);
                 Groups.player.each(player -> showOnlineLabel(player, server, host));
             }, e -> Groups.player.each(player -> showOfflineLabel(player, server))))).toArray(CompletableFuture<?>[]::new);
@@ -105,7 +102,7 @@ public class LightweightHub extends Plugin {
             }).join();
         }, delaySeconds, refreshDuration);
 
-        netServer.admins.addActionFilter(action -> action.type != ActionType.placeBlock && action.type != ActionType.breakBlock && !(action.tile.block() instanceof MessageBlock));
+        netServer.admins.addActionFilter(action -> action.type != placeBlock && action.type != breakBlock);
     }
 
     @Override
@@ -114,10 +111,5 @@ public class LightweightHub extends Plugin {
             config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
             Log.info("[Hub] Конфигурация успешно перезагружена.");
         });
-    }
-
-    public static Locale findLocale(Player player) {
-        Locale locale = Structs.find(Bundle.supportedLocales, l -> player.locale.equals(l.toString()) || player.locale.startsWith(l.toString()));
-        return locale != null ? locale : Bundle.defaultLocale;
     }
 }
