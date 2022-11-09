@@ -2,28 +2,27 @@ package inside;
 
 import arc.Core;
 import arc.Events;
-import arc.graphics.Color;
 import arc.util.*;
 import com.google.gson.*;
-import mindustry.content.Fx;
 import mindustry.game.EventType.*;
+import mindustry.game.Team;
 import mindustry.gen.*;
 import mindustry.mod.Plugin;
 import mindustry.net.Host;
-import mindustry.world.Tile;
+import useful.Bundle;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static inside.Bundle.*;
 import static mindustry.Vars.*;
 import static mindustry.net.Administration.ActionType.*;
 
 public class LightweightHub extends Plugin {
 
-    public static final float delaySeconds = 3f;
-    public static final float refreshDuration = 6f;
-    public static final float teleportUpdateInterval = 3f;
+    public static final float
+            delaySeconds = 3f,
+            refreshDuration = 6f,
+            teleportUpdateInterval = 3f;
 
     public static final Interval interval = new Interval();
     public static final AtomicInteger counter = new AtomicInteger();
@@ -33,22 +32,21 @@ public class LightweightHub extends Plugin {
 
     public static void showOnlineLabel(Player player, Server server, Host host) {
         Call.label(player.con, host.name, refreshDuration, server.titleX * tilesize, server.titleY * tilesize);
-        Call.label(player.con, format("server.offline", findLocale(player), host.players, host.mapname), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
+        Call.label(player.con, Bundle.format("server.offline", player, host.players, host.mapname), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
     }
 
     public static void showOfflineLabel(Player player, Server server) {
-        Call.label(player.con, format("server.online", findLocale(player)), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
+        Call.label(player.con, Bundle.format("server.online", player), refreshDuration, server.labelX * tilesize, server.labelY * tilesize);
     }
 
     public static void teleport(Player player) {
-        teleport(player, null);
+        teleport(player, player.tileX(), player.tileY());
     }
 
-    public static void teleport(Player player, Tile tile) {
+    public static void teleport(Player player, int x, int y) {
         config.servers.forEach(data -> {
-            if (data.inDiapason(tile != null ? tile.x : player.tileX(), tile != null ? tile.y : player.tileY())) {
+            if (data.inDiapason(x, y))
                 data.pingHost(host -> Call.connect(player.con, data.ip, data.port), e -> {});
-            }
         });
     }
 
@@ -57,37 +55,30 @@ public class LightweightHub extends Plugin {
         var configFile = dataDirectory.child("config-hub.json");
         if (configFile.exists()) {
             config = gson.fromJson(configFile.reader(), Config.class);
-            Log.info("[Hub] Конфигурация успешно загружена. (@)", configFile.absolutePath());
+            Log.info("[Hub] Config loaded. (@)", configFile.absolutePath());
         } else {
             configFile.writeString(gson.toJson(config = new Config()));
-            Log.info("[Hub] Файл конфигурации сгенерирован. (@)", configFile.absolutePath());
+            Log.info("[Hub] Config file generated. (@)", configFile.absolutePath());
         }
 
-        Bundle.load();
+        Bundle.load(LightweightHub.class);
 
-        content.units().each(unit -> unit.payloadCapacity = 0f);
+        content.units().each(type -> type.payloadCapacity = 0f);
 
         Events.run(Trigger.update, () -> {
-            config.servers.forEach(server -> {
-                Call.effect(Fx.hitFlamePlasma, server.tileX() - server.size * tilesize, server.tileY() - server.size * tilesize, 45f, Color.white);
-                Call.effect(Fx.hitFlamePlasma, server.tileX() + server.size * tilesize, server.tileY() - server.size * tilesize, 135f, Color.white);
-                Call.effect(Fx.hitFlamePlasma, server.tileX() + server.size * tilesize, server.tileY() + server.size * tilesize, 225f, Color.white);
-                Call.effect(Fx.hitFlamePlasma, server.tileX() - server.size * tilesize, server.tileY() + server.size * tilesize, 315f, Color.white);
-            });
-
-            if (interval.get(teleportUpdateInterval)) {
+            if (interval.get(teleportUpdateInterval))
                 Groups.player.each(LightweightHub::teleport);
-            }
         });
 
-        Events.on(TapEvent.class, event -> teleport(event.player, event.tile));
+        Events.on(TapEvent.class, event -> teleport(event.player, event.tile.x, event.tile.y));
 
         Events.on(PlayerJoin.class, event -> config.servers.forEach(server -> server.pingHost(host -> showOnlineLabel(event.player, server, host), e -> showOfflineLabel(event.player, server))));
 
         Events.on(WorldLoadEvent.class, event -> {
             state.rules.blockDamageMultiplier = 0f;
             state.rules.unitDamageMultiplier = 0f;
-            state.rules.teams.get(state.rules.defaultTeam).cheat = true;
+
+            Structs.each(team -> team.rules().cheat = true, Team.baseTeams);
         });
 
         Timer.schedule(() -> {
@@ -107,9 +98,9 @@ public class LightweightHub extends Plugin {
 
     @Override
     public void registerServerCommands(CommandHandler handler) {
-        handler.register("reload-config", "Перезагрузить конфигурацию плагина LightweightHub.", args -> {
+        handler.register("reload-config", "Reload LightweightHub config .", args -> {
             config = gson.fromJson(dataDirectory.child("config-hub.json").readString(), Config.class);
-            Log.info("[Hub] Конфигурация успешно перезагружена.");
+            Log.info("[Hub] Config reloaded.");
         });
     }
 }
